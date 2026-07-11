@@ -168,12 +168,6 @@
 
 ---
 
-**Fin del Curso**
+Amplía este glosario con tus propias definiciones y ejemplos. Poder explicar un término sin repetir la documentación es una buena prueba de comprensión.
 
-¡Felicidades por completar el curso AWS!
-
-Próximos pasos:
-1. Practica con AWS Free Tier
-2. Implementa arquitectura para tu proyecto
-3. Considera certificación AWS (Solutions Architect Associate)
-4. Sigue aprendiendo con AWS re:Invent videos
+**Volver:** [README y checklist](README.md)

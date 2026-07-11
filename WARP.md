@@ -4,19 +4,20 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Repository Overview
 
-This is a comprehensive AWS training course documentation repository, designed as modular Markdown files optimized for import into Notion. The course covers AWS fundamentals through advanced topics including serverless, machine learning, security, and disaster recovery, with a specific focus on Odoo deployment scenarios.
+This is a comprehensive AWS learning repository organized as modular Markdown chapters. It covers fundamentals through architecture, development, operations, DevOps, security, data, governance, and disaster recovery, with practical exercises and Odoo deployment scenarios.
 
 **Target Audience**: The content is structured for Spanish-speaking developers working with Odoo, but applicable to general AWS learning and certification preparation (AWS Solutions Architect Associate).
 
 ## Repository Structure
 
-The repository contains 29 numbered markdown files (00-28) representing course modules:
+The repository contains 35 numbered markdown files (00-34) representing course modules:
 
 ### Core Organization Pattern
 - `00-indice.md`: Master index with learning paths and module organization
 - `01-18.md`: Fundamental AWS services and best practices
 - `19-28.md`: Advanced topics (serverless, ML, security, VPC, DR)
-- `README.md`: Import instructions and course metadata
+- `29-34.md`: FinOps, IaC, CI/CD, operations, governance, and capstone
+- `README.md`: Main course guide, progress checklist, and metadata
 
 ### Content Categories
 1. **Fundamentals** (01-02): AWS intro, IAM
@@ -26,6 +27,7 @@ The repository contains 29 numbered markdown files (00-28) representing course m
 5. **Integration** (14-15): Messaging, containers
 6. **Operations** (16-18): Best practices, CLI commands, glossary
 7. **Advanced** (19-28): Serverless, databases, analytics, ML, security, networking, DR
+8. **Career extensions** (29-34): FinOps, IaC, DevOps, operations, governance, capstone
 
 ## Key Content Patterns
 
@@ -114,11 +116,11 @@ Each service file typically includes:
 ### No Build System
 This is a pure documentation repository with no build, test, or deployment commands. There are no package managers, dependencies, or compilation steps.
 
-### Notion Import Optimization
-The markdown files are specifically formatted for Notion import:
+### Markdown conventions
+The files use portable Markdown conventions:
 - Clean markdown without complex tables
-- ASCII art for diagrams (Notion-compatible)
-- Modular single-file structure for independent imports
+- ASCII art for lightweight diagrams
+- Modular single-file structure for focused study
 - Use backticks for code blocks rather than images
 
 ### Version Control
@@ -129,11 +131,12 @@ Content is in Spanish with technical terms in English (standard AWS terminology)
 
 ## Learning Paths (from Index)
 
-- **Odoo Development Essential**: Modules 1-8, 16-17
-- **Production Complete**: Modules 1-17
-- **AWS Solutions Architect Certification**: All modules (1-28)
-- **Serverless/Modern Apps**: Modules 1-3, 6-7, 9-11, 14, 19-20
-- **Data Engineering**: Modules 6, 9-11, 21-22
+- **Cloud foundations**: Modules 1-3, 6, 8-9, 14, 16, 24, 29
+- **Solutions Architect**: Modules 1-16, 19-21, 24-30, 33-34
+- **Developer**: Modules 1-2, 9-11, 14-15, 17, 19-20, 24-26, 30-31, 34
+- **Cloud Operations**: Modules 1-17, 24-29, 32-34
+- **DevOps**: Modules 2, 14-17, 19-20, 24-26, 28-34
+- **Security and Data**: See the role-based paths in `00-indice.md`
 
 ## Reference Architecture (from best-practices.md)
 
