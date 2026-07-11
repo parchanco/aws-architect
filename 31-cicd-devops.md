@@ -53,6 +53,98 @@ Una aprobación manual no compensa la falta de automatización. Añade controles
 - alarmas de errores, latencia y saturación;
 - rollback automático basado en señales útiles.
 
+## GitHub Actions con OIDC
+
+OIDC permite que GitHub solicite una sesión temporal de AWS sin guardar access keys como secretos. El rol de AWS debe confiar únicamente en el repositorio, rama o environment necesarios.
+
+Trust policy simplificada:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {
+      "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+    },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+      },
+      "StringLike": {
+        "token.actions.githubusercontent.com:sub": "repo:example/orders:environment:production"
+      }
+    }
+  }]
+}
+```
+
+Workflow mínimo:
+
+```yaml
+name: deploy
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/orders-deploy
+          aws-region: eu-west-1
+
+      - run: ./scripts/test.sh
+      - run: ./scripts/deploy.sh
+      - run: ./scripts/smoke-test.sh
+```
+
+Fija actions de terceros por commit SHA cuando el riesgo lo requiera, limita permisos de `GITHUB_TOKEN`, protege environments y separa el rol que valida del que despliega.
+
+## Artefactos y cadena de suministro
+
+- construye una vez y asigna digest o checksum;
+- genera inventario de dependencias/SBOM;
+- analiza dependencias, imágenes e IaC;
+- firma o verifica artefactos según el modelo de amenaza;
+- conserva procedencia: commit, workflow, builder y parámetros;
+- promueve por digest, nunca reconstruyas para producción;
+- bloquea el despliegue de vulnerabilidades críticas según una política con excepciones auditadas.
+
+## Migraciones compatibles
+
+Una aplicación rolling o canary convive temporalmente con dos versiones. Usa expand/contract:
+
+1. añade esquema compatible con ambas versiones;
+2. despliega código que escriba o lea de forma compatible;
+3. migra y verifica datos;
+4. retira dependencias antiguas en otro despliegue.
+
+Evita renombrar o borrar columnas en el mismo cambio que deja de usarlas. El rollback de código no revierte automáticamente una migración destructiva.
+
+## Rollback guiado por señales
+
+Define antes del despliegue:
+
+- métricas y umbrales de error, latencia y negocio;
+- ventana de observación;
+- porcentaje de tráfico inicial;
+- condiciones de pausa y rollback;
+- comportamiento de migraciones y mensajes producidos;
+- persona o equipo responsable.
+
+Prueba el mecanismo periódicamente. Un botón de rollback que nunca se ha ejecutado es una hipótesis.
+
 ## Laboratorio
 
 Construye un pipeline para una Lambda, contenedor o aplicación web:

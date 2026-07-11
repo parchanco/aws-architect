@@ -3,7 +3,7 @@
 ## Conceptos Fundamentales
 
 ### Scalability
-**Vertical**: Aumentar recursos misma máquina (t2.micro → t2.large)
+**Vertical**: Aumentar recursos de la misma máquina (por ejemplo, pasar a una instancia con más vCPU y memoria)
 **Horizontal**: Añadir más máquinas (1 servidor → 10 servidores)
 
 ### High Availability

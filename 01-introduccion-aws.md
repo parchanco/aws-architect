@@ -1,5 +1,13 @@
 # 01 - Introducción a AWS
 
+## Objetivos
+
+- explicar regiones, Availability Zones y edge locations;
+- reconocer el modelo de responsabilidad compartida;
+- elegir región con criterios técnicos, legales y económicos;
+- preparar una cuenta de laboratorio con controles de coste y seguridad;
+- distinguir servicio administrado de responsabilidad delegada.
+
 ## Conceptos Básicos
 
 ### Regiones y Availability Zones
@@ -122,45 +130,35 @@ Barra búsqueda: Buscar servicios rápidamente
 
 ## Facturación
 
-### Free Tier
-```
-12 meses gratis (desde creación cuenta):
-- EC2: 750 horas t2.micro/mes
-- S3: 5 GB storage
-- RDS: 750 horas db.t2.micro/mes
-- CloudFront: 50 GB data transfer
+### AWS Free Tier
 
-Siempre gratis:
-- Lambda: 1M requests/mes
-- DynamoDB: 25 GB storage
-- CloudWatch: 10 custom metrics
-```
+El programa depende de la fecha de creación de la cuenta. Las cuentas nuevas creadas después del 15 de julio de 2025 pueden elegir un plan gratuito o de pago y reciben créditos promocionales; las cuentas anteriores conservan las reglas heredadas.
+
+> [!WARNING]
+> “Free Tier” no significa que toda la cuenta sea gratuita. Algunos servicios o configuraciones no están incluidos y el exceso de uso se factura. Comprueba siempre la [documentación vigente](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier.html).
+
+Antes del primer laboratorio:
+
+1. configura un AWS Budget y alertas;
+2. revisa los créditos y su caducidad;
+3. etiqueta recursos con `Environment=lab` y `Owner`;
+4. elimina los recursos al terminar;
+5. comprueba Cost Explorer durante los días posteriores.
 
 ### Modelos de Pago
 - **Pay-as-you-go**: Pagas solo lo que usas
-- **Save when you reserve**: Reserved Instances (40-75% descuento)
+- **Compromisos de uso**: Savings Plans y Reserved Instances pueden reducir costes cuando la demanda es estable
 - **Pay less when you use more**: Volume discounts
 - **Pay even less as AWS grows**: Precios bajan con tiempo
 
 ### Calculadora de Costos
-```
-https://calculator.aws/
-
-Ejemplo estimación Odoo:
-- EC2 t3.large: ~$60/mes
-- RDS db.t3.large: ~$120/mes
-- EBS 100GB: ~$10/mes
-- ALB: ~$20/mes
-Total: ~$210/mes (aproximado)
-```
+Usa [AWS Pricing Calculator](https://calculator.aws/) antes de desplegar. Una estimación debe indicar región, fecha, horas de uso, transferencia, almacenamiento, copias de seguridad y crecimiento esperado. Evita memorizar precios: cambian por región, arquitectura y fecha.
 
 ## Soporte AWS
 
 ### Planes
-1. **Basic**: Gratis (solo documentación)
-2. **Developer**: $29/mes (email support)
-3. **Business**: $100+/mes (24/7 phone/chat)
-4. **Enterprise**: $15,000+/mes (TAM dedicado)
+
+AWS ofrece distintos planes y niveles de respuesta. Como nombres, precios y prestaciones pueden cambiar, compara requisitos de producción, tiempo de respuesta, canales y acompañamiento técnico en la [página oficial de AWS Support](https://aws.amazon.com/premiumsupport/plans/).
 
 ### Trusted Advisor
 - Optimización de costos
@@ -193,10 +191,10 @@ DR: eu-central-1 (Frankfurt)
 
 ```
 ✅ Activar MFA en root account
-✅ Crear IAM users (no usar root)
+✅ Centralizar acceso humano con IAM Identity Center y credenciales temporales
 ✅ Configurar billing alerts
 ✅ Usar tags para organizar recursos
-✅ Empezar con Free Tier
+✅ Confirmar créditos, límites y presupuesto antes de practicar
 ✅ Leer documentación AWS
 ✅ Practicar en sandbox/dev primero
 ✅ Implementar backups desde día 1
@@ -216,6 +214,29 @@ DR: eu-central-1 (Frankfurt)
 - **AWS Well-Architected**: Framework mejores prácticas
 - **AWS Blog**: Novedades y casos de uso
 - **AWS re:Invent**: Conferencia anual (videos gratis)
+
+## Laboratorio: preparar la cuenta
+
+1. Protege el usuario raíz con MFA y revisa sus métodos de recuperación.
+2. Configura acceso humano temporal mediante IAM Identity Center.
+3. Crea un presupuesto y alertas al 50 %, 80 % y 100 %.
+4. Elige región y documenta latencia, servicios, cumplimiento y coste.
+5. Crea un recurso etiquetado, localízalo en facturación y elimínalo.
+6. Comprueba que no quedan recursos activos en otras regiones.
+
+### Criterio de finalización
+
+- [ ] Root no tiene access keys y no se usa para trabajo diario.
+- [ ] El acceso de laboratorio utiliza credenciales temporales.
+- [ ] Presupuesto, alertas, región y etiquetas están documentados.
+- [ ] La limpieza de recursos se ha verificado.
+
+## Preguntas de repaso
+
+1. ¿Qué diferencia hay entre región y Availability Zone?
+2. ¿Qué responsabilidades mantiene el cliente al usar un servicio administrado?
+3. ¿Por qué la región más cercana no siempre es la mejor elección?
+4. ¿Qué controles aplicarías antes de crear el primer recurso?
 
 ---
 
