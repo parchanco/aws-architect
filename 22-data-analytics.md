@@ -274,7 +274,7 @@ Retention: 1-365 days
 - Lambda
 - Kinesis Client Library (KCL)
 - Kinesis Data Firehose
-- Kinesis Data Analytics
+- Amazon Managed Service for Apache Flink
 
 ### Kinesis Data Firehose
 
@@ -294,14 +294,14 @@ Destinations:
 - Datadog, Splunk, etc.
 ```
 
-### Kinesis Data Analytics
+### Amazon Managed Service for Apache Flink
 
 ```
-SQL queries on streaming data
+Procesamiento con Apache Flink usando SQL, Java, Python o Scala
 
 Kinesis Stream/Firehose
     ↓
-Kinesis Data Analytics (SQL)
+    Managed Service for Apache Flink
     ↓
 Kinesis Stream/Firehose/Lambda
 
@@ -336,7 +336,7 @@ Fully compatible Apache Kafka
 Multi-AZ deployment
 Auto healing
 Encryption in-transit and at-rest
-Integration con Kinesis Data Analytics
+Integration con Amazon Managed Service for Apache Flink
 ```
 
 ### MSK vs Kinesis
@@ -454,6 +454,83 @@ Benefits:
 ✓ Cost-effective storage
 ✓ Scalable analytics
 ```
+
+## Diseño moderno de un data lake
+
+### Capas y contratos
+
+```text
+sources → raw/bronze → validated/silver → products/gold
+            │                 │                │
+         immutable       quality rules     business contract
+```
+
+- **Raw:** conserva el evento original, fecha de ingesta y procedencia.
+- **Validated:** corrige tipos, duplicados y registros inválidos sin ocultar errores.
+- **Products:** tablas preparadas para un caso de negocio y con propietario.
+
+El nombre de una capa no garantiza calidad. Define esquema, SLA, clasificación, propietario y consumidores.
+
+### Formatos de datos
+
+- usa Parquet u otro formato columnar para analítica;
+- comprime y particiona por campos con cardinalidad y filtros útiles;
+- evita miles de archivos pequeños: aumentan planificación y peticiones;
+- evalúa Apache Iceberg cuando necesites evolución de esquema, transacciones y snapshots;
+- no particiones directamente por identificadores de alta cardinalidad.
+
+### Gobierno con Lake Formation
+
+Lake Formation permite administrar permisos sobre catálogos, bases, tablas y columnas. Combínalo con IAM, cifrado, clasificación y auditoría. Diseña el acceso desde el dato hacia los roles consumidores, no con permisos amplios sobre todo el bucket.
+
+### Athena y control de costes
+
+- separa equipos mediante workgroups;
+- limita bytes escaneados y cifra resultados;
+- usa Parquet, compresión, particionado y proyección cuando corresponda;
+- observa consultas fallidas, datos escaneados y coste por producto;
+- evita `SELECT *` en procesos recurrentes.
+
+### Redshift y cargas de trabajo
+
+Compara Redshift provisionado y Redshift Serverless según previsibilidad, aislamiento y operación. Distribución, sort keys y materialized views dependen del patrón de consulta; mide antes de optimizar.
+
+## Calidad, linaje y observabilidad
+
+Un pipeline correcto debe responder:
+
+- ¿llegaron los datos a tiempo y completos?;
+- ¿cumplen esquema, unicidad y reglas de negocio?;
+- ¿qué transformación produjo una columna?;
+- ¿qué consumidores se ven afectados por un cambio?;
+- ¿cómo se reprocesa sin duplicar resultados?;
+- ¿cuánto cuesta por dataset o ejecución?
+
+Registra métricas de freshness, volumen, nulls, duplicados, distribución y fallos. Separa registros inválidos en una zona de cuarentena con proceso de resolución.
+
+## Laboratorio: de ingesta a consulta
+
+1. Genera eventos ficticios de pedidos y guárdalos en una zona raw.
+2. Cataloga el esquema y transforma a Parquet particionado.
+3. Añade controles de esquema, unicidad e importes válidos.
+4. Consulta con Athena desde un workgroup limitado.
+5. Restringe una columna sensible mediante gobierno de datos.
+6. Introduce un registro inválido, envíalo a cuarentena y reprocesa.
+
+### Criterio de finalización
+
+- [ ] El dataset puede reconstruirse desde raw.
+- [ ] El proceso es idempotente y soporta replay.
+- [ ] Calidad, linaje, propietario y coste son visibles.
+- [ ] Los consumidores no acceden directamente a datos sensibles sin autorización.
+- [ ] Existe estrategia para cambios compatibles de esquema.
+
+## Preguntas de repaso
+
+1. ¿Por qué demasiados archivos pequeños perjudican la analítica?
+2. ¿Qué aporta Iceberg frente a una colección de Parquet sin metadatos transaccionales?
+3. ¿Cómo diseñarías un reprocesado sin duplicados?
+4. ¿Qué diferencia hay entre que un job termine y que produzca datos correctos?
 
 ---
 

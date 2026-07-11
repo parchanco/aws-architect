@@ -1,150 +1,101 @@
-# 07 - ElastiCache
+# 07 - Amazon ElastiCache
 
-In-memory cache para mejorar performance.
+ElastiCache es un servicio administrado de almacenamiento en memoria. Reduce latencia y descarga sistemas persistentes, pero introduce coherencia, invalidación y comportamiento ante fallos que deben diseñarse.
 
-## Engines
+## Objetivos
 
-### Redis (Recomendado)
-```
-✅ Data structures (strings, lists, sets, hashes)
-✅ Persistence (RDB, AOF)
-✅ High availability (Multi-AZ, replicación)
-✅ Backups
-✅ Pub/Sub
-Precio: ~$0.017/h (cache.t3.micro)
-```
+- elegir entre Valkey, Redis OSS y Memcached;
+- comparar caché serverless y clusters basados en nodos;
+- aplicar cache-aside, write-through y TTL;
+- diseñar alta disponibilidad, seguridad y observabilidad;
+- evitar cache stampede y datos obsoletos.
 
-### Memcached
-```
-✅ Simple key-value
-✅ Multi-threaded
-❌ No persistence
-❌ No replicación
-```
+## Motores
 
-**Selección**: Usa Redis (más features, HA).
+| Motor | Elegir cuando |
+|---|---|
+| Valkey | Necesitas estructuras avanzadas, replicación, persistencia, pub/sub o clustering; es la opción abierta moderna |
+| Redis OSS | Mantienes compatibilidad con una carga Redis existente y una versión compatible |
+| Memcached | Solo necesitas una caché simple, multihilo y efímera |
 
-## Arquitectura Redis
+No uses una caché como única fuente de verdad. El sistema debe tolerar pérdida, evicción y reinicio.
 
-```
-Primary (Read/Write)
-  ↓ Replicación
-  ├─ Replica 1 (Read)
-  ├─ Replica 2 (Read)
-  └─ Replica 3 (Read)
+## Serverless o basado en nodos
 
-Hasta 5 replicas
-Multi-AZ con auto-failover
-```
+- **Serverless:** capacidad administrada y escalado automático; útil para demanda variable y menor operación.
+- **Node-based:** elección de familias, réplicas, shards y parámetros; útil cuando necesitas control o capacidad predecible.
 
-## ElastiCache para Odoo
+Compara coste con tráfico real: capacidad, peticiones, transferencia, backups y réplicas.
 
-### 1. Session Storage
+## Patrón cache-aside
 
 ```python
-# odoo.conf
-session_store = redis
-redis_host = redis.xxx.cache.amazonaws.com
-redis_port = 6379
+import json
+import random
 
-Beneficios:
-✅ Sessions compartidas entre instancias
-✅ No necesitas sticky sessions en ALB
-✅ Sessions persisten reinicio Odoo
-```
-
-### 2. Application Cache
-
-```python
-# Cache queries frecuentes
-def get_partner_stats(partner_id):
-    cache_key = f'partner:{partner_id}:stats'
-    
-    # Try cache
-    cached = redis_client.get(cache_key)
-    if cached:
+def get_partner(partner_id):
+    key = f"partner:{partner_id}:v1"
+    cached = cache.get(key)
+    if cached is not None:
         return json.loads(cached)
-    
-    # Query DB
-    stats = compute_stats(partner_id)
-    
-    # Cache 1 hora
-    redis_client.setex(cache_key, 3600, json.dumps(stats))
-    return stats
+
+    value = database.get_partner(partner_id)
+    ttl = 300 + random.randint(0, 60)  # jitter evita expiración simultánea
+    cache.setex(key, ttl, json.dumps(value))
+    return value
 ```
 
-### 3. Queue de Jobs
+Al escribir, actualiza primero la fuente de verdad y después invalida la clave. Diseña qué ocurre si la invalidación falla.
 
-```python
-# Redis como queue
-import rq
-queue = rq.Queue('odoo-jobs', connection=redis_conn)
+## Riesgos de caché
 
-# Enqueue
-queue.enqueue('process_invoice', invoice_id=123)
-```
+- **Cache stampede:** muchas peticiones recalculan el mismo valor; usa locking, request coalescing o refresh anticipado.
+- **Hot keys:** una clave concentra tráfico; replica lecturas, particiona o rediseña.
+- **Evictions:** indican presión de memoria o una política inadecuada.
+- **Datos obsoletos:** TTL e invalidación deben derivarse del requisito de negocio.
+- **Fallo de caché:** protege la base de datos con límites de concurrencia y circuit breakers.
 
-## Caching Strategies
+## Alta disponibilidad
 
-### Lazy Loading
-```python
-def get_data(key):
-    data = cache.get(key)
-    if not data:
-        data = db.query(key)
-        cache.set(key, data, ttl=3600)
-    return data
+Para Valkey o Redis OSS basado en nodos, evalúa replicas, Multi-AZ, automatic failover y cluster mode. El cliente debe usar el endpoint adecuado, timeouts cortos, retry limitado y conexiones reutilizables. Prueba el failover: “Multi-AZ” no valida por sí solo el comportamiento de la aplicación.
 
-Pros: Solo cachea lo que se pide
-Cons: Cache miss penalty
-```
+## Seguridad
 
-### Write-Through
-```python
-def save_data(key, data):
-    cache.set(key, data)
-    db.save(key, data)
+- despliega la caché en subnets privadas;
+- permite el puerto solo desde el security group de la aplicación;
+- habilita cifrado en tránsito y en reposo cuando corresponda;
+- usa autenticación y RBAC compatibles con el motor;
+- guarda secretos en Secrets Manager, nunca en `odoo.conf` versionado;
+- registra cambios de configuración mediante CloudTrail.
 
-Pros: Cache siempre actualizado
-Cons: Write penalty
-```
+La integración de sesiones o colas con Odoo depende del módulo y versión utilizados. Verifica compatibilidad antes de asumir que una directiva de configuración es nativa.
 
-### Cache Invalidation
-```python
-# Al actualizar data
-def update_partner(partner_id, data):
-    db.update(partner_id, data)
-    cache.delete(f'partner:{partner_id}')
-```
+## Observabilidad
 
-## Security
+Observa latencia, conexiones, hit ratio, memoria, CPU/ECPU, evictions, replication lag y errores del cliente. Un hit ratio alto no compensa respuestas obsoletas.
 
-```python
-Security Group:
-Inbound: Port 6379 desde SG de apps
-No acceso desde Internet
+## Laboratorio
 
-Encryption:
-- At-rest: KMS
-- In-transit: TLS
-- Auth token: Password para conexión
-```
+1. Despliega una caché pequeña en una red privada.
+2. Implementa cache-aside con TTL y jitter.
+3. Mide latencia y carga de base de datos con caché fría y caliente.
+4. Simula indisponibilidad y comprueba que la aplicación se degrada de forma controlada.
+5. Provoca expiración concurrente y aplica una protección contra stampede.
+6. Elimina la caché y comprueba el coste restante.
 
-## Monitoring
+### Criterio de finalización
 
-```python
-CloudWatch Metrics:
-- CPUUtilization
-- FreeableMemory
-- CacheHits / CacheMisses
-- Evictions
+- [ ] La caché no es accesible desde Internet.
+- [ ] La aplicación funciona, aunque más lentamente, sin caché.
+- [ ] TTL e invalidación están justificados.
+- [ ] Existen métricas y alarma ante evictions o errores.
+- [ ] Se ha documentado la elección de motor y capacidad.
 
-Alarms:
-- CPU > 75%
-- Memory < 50 MB
-- Evictions > threshold
-```
+## Preguntas de repaso
 
----
+1. ¿Cuándo elegirías Memcached frente a Valkey?
+2. ¿Por qué añadir jitter al TTL?
+3. ¿Cómo proteges la base de datos durante un fallo de caché?
+4. ¿Qué diferencia hay entre disponibilidad de la caché y coherencia del dato?
 
-**Siguiente**: [08 - Route 53](08-route53.md)
+**Siguiente:** [08 - Route 53](08-route53.md)

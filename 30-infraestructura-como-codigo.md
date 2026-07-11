@@ -84,6 +84,87 @@ observe:    dashboards y alarmas
 
 Una dependencia transversal debe tener un contrato explícito: output, Parameter Store o catálogo de servicios. Evita copiar IDs a mano.
 
+## Validar y desplegar CloudFormation
+
+```bash
+set -euo pipefail
+
+TEMPLATE=infra/template.yaml
+STACK=orders-dev
+
+aws cloudformation validate-template \
+  --template-body "file://$TEMPLATE"
+
+# Crea o actualiza y espera hasta conocer el resultado final.
+aws cloudformation deploy \
+  --stack-name "$STACK" \
+  --template-file "$TEMPLATE" \
+  --parameter-overrides Environment=dev \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --no-fail-on-empty-changeset \
+  --tags Application=orders Environment=dev Owner=platform
+
+aws cloudformation describe-stacks \
+  --stack-name "$STACK" \
+  --query 'Stacks[0].Outputs'
+```
+
+En producción, conserva y revisa el change set antes de ejecutarlo, especialmente si reemplaza bases de datos, direcciones o almacenamiento. `CAPABILITY_NAMED_IAM` indica que la plantilla puede modificar IAM; no debe aceptarse sin revisar esos recursos.
+
+## AWS CDK
+
+CDK genera CloudFormation a partir de constructs. El código aporta reutilización, pero inspecciona siempre la plantilla sintetizada.
+
+```python
+from aws_cdk import App, Stack, RemovalPolicy
+from aws_cdk import aws_s3 as s3
+from constructs import Construct
+
+class StorageStack(Stack):
+    def __init__(self, scope: Construct, stack_id: str, **kwargs):
+        super().__init__(scope, stack_id, **kwargs)
+        s3.Bucket(
+            self,
+            "Assets",
+            encryption=s3.BucketEncryption.S3_MANAGED,
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+            versioned=True,
+            removal_policy=RemovalPolicy.RETAIN,
+        )
+
+app = App()
+StorageStack(app, "orders-storage")
+app.synth()
+```
+
+Prueba constructs con assertions sobre propiedades de seguridad. Un snapshot completo detecta cambios, pero puede generar ruido; combina snapshots pequeños con invariantes explícitas.
+
+## Controles automáticos
+
+```text
+format → validate → unit tests → lint → policy/security scan
+       → synth/plan → revisión del cambio → deploy → smoke test
+```
+
+Controles útiles:
+
+- formato y validación de sintaxis;
+- `cfn-lint` o equivalente;
+- assertions de CDK;
+- policy-as-code para cifrado, exposición pública y etiquetas;
+- detección de secretos;
+- revisión de permisos IAM creados;
+- despliegue efímero y prueba de humo;
+- comprobación de drift programada.
+
+## Estado, importación y retirada
+
+- CloudFormation mantiene el estado del stack; Terraform/OpenTofu necesita backend remoto, cifrado, locking y acceso restringido.
+- Para adoptar un recurso existente, usa mecanismos de importación y prueba primero; no lo recrees por accidente.
+- Define `DeletionPolicy` y `UpdateReplacePolicy` conscientemente para cada dato.
+- Una retirada debe incluir exportación, periodo de retención, dependencias y verificación de coste.
+- StackSets ayuda a desplegar una configuración consistente en múltiples cuentas y regiones, con límites de concurrencia y fallo.
+
 ## Laboratorio
 
 1. Modela por código una VPC pequeña o una aplicación serverless.

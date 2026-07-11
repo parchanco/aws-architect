@@ -1,6 +1,6 @@
-# 23 - Machine Learning en AWS
+# 23 - Machine learning e IA generativa en AWS
 
-## Amazon SageMaker
+## Amazon SageMaker AI
 
 Platform completa de ML.
 
@@ -68,7 +68,7 @@ xgboost.fit({'train': 's3://bucket/train.csv'})
 # Deploy
 predictor = xgboost.deploy(
     initial_instance_count=1,
-    instance_type='ml.t2.medium'
+    instance_type='ml.m5.large'
 )
 
 # Predict
@@ -464,6 +464,94 @@ def process_invoice_upload(s3_key):
     })
 ```
 
+## Amazon Bedrock e IA generativa
+
+Amazon Bedrock permite usar foundation models mediante una API administrada y construir aplicaciones generativas sin operar la infraestructura del modelo.
+
+### Casos de uso
+
+- resumen y clasificación de documentos;
+- extracción estructurada con validación;
+- asistentes sobre conocimiento privado;
+- generación y revisión de contenido;
+- búsqueda semántica;
+- agentes que ejecutan acciones con controles explícitos.
+
+No uses un LLM cuando una regla, búsqueda tradicional o modelo pequeño sea más fiable, barato y fácil de evaluar.
+
+### Flujo de inferencia
+
+```text
+request → autenticación/autorización → filtro de entrada
+        → prompt versionado + contexto permitido
+        → modelo mediante Bedrock
+        → validación/filtro de salida
+        → respuesta + métricas + traza segura
+```
+
+La selección de modelo debe considerar calidad, contexto, latencia, coste, regiones, modalidad y requisitos de datos. No elijas únicamente por el resultado de una demostración.
+
+### RAG
+
+Retrieval-Augmented Generation añade información recuperada en tiempo de consulta:
+
+```text
+documentos → extracción → chunks → embeddings → índice vectorial
+
+pregunta → embedding → recuperar fragmentos → prompt → respuesta con fuentes
+```
+
+Decisiones importantes:
+
+- tamaño y solapamiento de chunks;
+- metadatos y filtros de autorización;
+- modelo de embeddings;
+- estrategia híbrida lexical + vectorial;
+- número de resultados y reranking;
+- actualización, borrado y trazabilidad de documentos;
+- evaluación de retrieval separada de la generación.
+
+El filtro de acceso debe aplicarse antes de entregar contexto al modelo. Que un usuario pueda preguntar no significa que pueda recuperar todos los documentos.
+
+### Seguridad y guardrails
+
+- clasifica información antes de enviarla al modelo;
+- minimiza PII, secretos y datos innecesarios;
+- trata documentos recuperados como entrada no confiable;
+- defiende contra prompt injection y tool abuse;
+- limita las herramientas que puede invocar un agente;
+- valida salidas estructuradas antes de ejecutar acciones;
+- registra metadatos útiles sin guardar contenido sensible indiscriminadamente;
+- incorpora revisión humana en decisiones de alto impacto.
+
+Guardrails ayudan a aplicar políticas, pero no reemplazan autorización, validación, evaluación ni diseño seguro.
+
+### Evaluación
+
+Construye un dataset representativo y versionado. Mide:
+
+- exactitud y completitud;
+- groundedness y citas;
+- relevancia del retrieval;
+- seguridad y tasa de rechazo correcta;
+- latencia y disponibilidad;
+- tokens y coste por tarea;
+- rendimiento por idioma, segmento y dificultad.
+
+No uses solo evaluación subjetiva. Combina métricas automáticas con revisión humana y casos adversariales.
+
+## MLOps
+
+El ciclo de vida incluye datos, features, entrenamiento, evaluación, registro, despliegue, observación y retirada.
+
+```text
+data version → train → evaluate → model registry → approve
+             → deploy canary → monitor data/model/business
+             → retrain or rollback
+```
+
+Registra código, datos, parámetros, imagen, modelo y métricas para reproducir un resultado. Distingue data drift, concept drift y degradación de la métrica de negocio.
+
 ## ML Architecture - Odoo Example
 
 ```
@@ -492,6 +580,30 @@ Benefits:
 ✓ Faster processing
 ✓ Scalable
 ```
+
+## Laboratorio: asistente con fuentes
+
+1. Usa documentos ficticios y elimina información sensible.
+2. Construye un índice con metadatos de autorización.
+3. Devuelve respuesta y fragmentos que la fundamentan.
+4. Crea al menos 20 preguntas esperadas, límites y casos adversariales.
+5. Compara dos configuraciones por calidad, latencia y coste.
+6. Intenta prompt injection desde un documento y aplica mitigaciones.
+
+### Criterio de finalización
+
+- [ ] Un usuario no recupera documentos fuera de su autorización.
+- [ ] Las respuestas sin evidencia suficiente reconocen la incertidumbre.
+- [ ] Prompt, modelo, dataset y evaluación están versionados.
+- [ ] Existe presupuesto, límite de uso y observabilidad.
+- [ ] Ninguna salida ejecuta acciones sin validación y autorización.
+
+## Preguntas de repaso
+
+1. ¿Qué problema resuelve RAG y qué problemas no resuelve?
+2. ¿Por qué debes evaluar retrieval y generación por separado?
+3. ¿Cómo limitarías una herramienta invocada por un agente?
+4. ¿Qué diferencia hay entre data drift y concept drift?
 
 ---
 
