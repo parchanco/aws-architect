@@ -448,12 +448,4 @@ aws sns publish   --topic-arn arn:aws:sns:us-east-1:123:alerts   --message "DR a
 
 **Certificación**: DR strategies, RPO/RTO, backup best practices son importantes.
 
-**FIN DEL CURSO**
-
-¡Felicidades! Has completado el curso AWS.
-
-**Próximos pasos**:
-1. Practica en AWS Free Tier
-2. Implementa un proyecto real
-3. Certifícate: AWS Solutions Architect Associate
-4. Continúa aprendiendo servicios avanzados
+**Siguiente**: [29 - FinOps y economía cloud](29-finops-economia-cloud.md)
